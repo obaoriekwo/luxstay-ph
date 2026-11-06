@@ -847,6 +847,7 @@
 <!-- TOAST -->
 <div id="toast">✅ <span id="toastMsg">Done!</span></div>
 
+<script src="store.js"></script>
 <script>
 // ── DATA ──
 const apartments = [
@@ -962,7 +963,26 @@ let currentAptFilter = 'all';
 let testiIndex = 0;
 
 // ── INIT ──
+// ── SHARED DATA (edited in admin.html) ──
+function applyStore() {
+  if (!window.LuxStore) return;
+  const s = LuxStore.load();
+  s.apartments.forEach(o => {
+    const a = apartments.find(x => x.id === o.id);
+    if (!a) return;
+    a.price = o.price;
+    a.available = o.available;
+    a.bookedDates = new Set(o.bookedDates);
+  });
+}
+window.addEventListener('storage', e => {
+  if (window.LuxStore && e.key === LuxStore.KEY) {
+    applyStore(); renderApartments(currentAptFilter); renderAptSelector(); renderCalendar();
+  }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
+  applyStore();
   renderApartments('all');
   renderAptSelector();
   renderCalendar();
@@ -1201,8 +1221,16 @@ function confirmBooking() {
   const ci = document.getElementById('modalCheckin').value;
   const co = document.getElementById('modalCheckout').value;
   if (!name || !email || !ci || !co) { showToast('⚠️ Please fill in all required fields'); return; }
+  if (ci >= co) { showToast('⚠️ Check-out must be after check-in'); return; }
+  if (window.LuxStore) {
+    const clash = LuxStore.nightsBetween(ci, co).some(d => bookingApt.bookedDates.has(d));
+    if (clash) { showToast('⚠️ Some of those dates are already booked. Please check the availability calendar.'); return; }
+    LuxStore.addRequest({ type: 'booking', aptId: bookingApt.id, name, email, phone, checkin: ci, checkout: co });
+  }
   closeModal();
-  showToast(`🎉 Booking request sent for ${bookingApt.name}! We'll contact you at ${email} shortly.`);
+  ['modalName','modalEmail','modalPhone','modalCheckin','modalCheckout'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('modalPriceSummary').innerHTML = '';
+  showToast(`🎉 Demo booking request saved for ${bookingApt.name}. You can see it in the Admin dashboard.`);
 }
 
 // ── CONTACT FORM ──
@@ -1211,8 +1239,18 @@ function submitForm() {
   const email = document.getElementById('email').value.trim();
   const apt = document.getElementById('aptChoice').value;
   if (!name || !email || !apt) { showToast('⚠️ Please fill in required fields'); return; }
-  showToast('✅ Demo form: your request was validated, but no message was sent.');
-  ['fname','lname','email','phone','message'].forEach(id => { document.getElementById(id).value = ''; });
+  const ci = document.getElementById('checkin').value;
+  const co = document.getElementById('checkout').value;
+  if (ci && co && ci >= co) { showToast('⚠️ Check-out must be after check-in'); return; }
+  if (window.LuxStore) {
+    const a = apartments.find(x => x.name === apt);
+    const full = (name + ' ' + document.getElementById('lname').value.trim()).trim();
+    LuxStore.addRequest({ type: (ci && co) ? 'booking' : 'enquiry', aptId: a ? a.id : null, name: full, email,
+      phone: document.getElementById('phone').value.trim(), checkin: ci && co ? ci : '', checkout: ci && co ? co : '',
+      message: document.getElementById('message').value.trim() });
+  }
+  showToast('✅ Demo request saved. No email was sent, but you can see it in the Admin dashboard.');
+  ['fname','lname','email','phone','message','checkin','checkout'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('aptChoice').value = '';
 }
 

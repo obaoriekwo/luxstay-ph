@@ -13,9 +13,16 @@ A fully responsive, single-page booking website for a fictional short-let apartm
 - Animated stats, scroll-reveal effects and a mobile hamburger menu
 - Mobile-first, responsive layout tested from 320px phones up to desktop
 - Basic SEO: meta description and semantic sections
+- **Admin dashboard** (`admin.html`): demo login, booking requests (confirm / decline), price editing,
+  listing on/off switch and a click-to-block availability calendar. Changes made in admin update the
+  public site's prices and calendar instantly (shared via `store.js` + localStorage).
+
+## Admin demo login
+Email: `admin@luxstay.ph` · Password: `demo1234`
+(Front-end demo only: data is stored in your browser, with no real server or authentication.)
 
 ## Tech
-HTML5 · CSS3 (Flexbox, Grid, media queries) · JavaScript (ES6+) · Google Fonts
+HTML5 · CSS3 (Flexbox, Grid, media queries) · JavaScript (ES6+, localStorage, DOM events) · Google Fonts
 
 ## Deploy (Render Static Site)
 1. Push this folder to a GitHub repository.
